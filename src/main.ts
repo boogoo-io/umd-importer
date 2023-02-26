@@ -1,11 +1,17 @@
-import axios, {AxiosInstance} from 'axios'
+import axios, { AxiosInstance } from 'axios'
+
+interface Options {
+  debug?: boolean
+  cache?: boolean
+}
 
 class UmdImporter {
   private fetcher: AxiosInstance
   private readonly allPackages: any = {}
-  private readonly options: { debug?: boolean } = {}
+  private readonly options: Options = {}
+  private readonly cachedPromise: Record<string, Promise<any> | undefined> = {}
 
-  constructor(options: { debug?: boolean } = {}) {
+  constructor(options: Options = {}) {
     this.fetcher = axios.create()
     this.options = options
   }
@@ -18,14 +24,38 @@ class UmdImporter {
 
   public async import<T = unknown>(url: string, globalPackageName?: string): Promise<T> {
     const packageName = globalPackageName || this.getName(url, globalPackageName)
-    this.log(`import ${url} as ${packageName}`)
-    const {data: jsContent} = await this.fetcher.get(url)
+    let resPromise
+    if (this.options.cache) {
+      if (this.cachedPromise[packageName]) {
+        resPromise = this.cachedPromise[packageName]
+        this.log(`import ${url} as ${packageName} from cache hit`)
+      } else {
+        resPromise = this.loadPackage(url, packageName)
+        this.log(`import ${url} as ${packageName} from cache not hit fallback http`)
+      }
+      this.cachedPromise[packageName] = resPromise
+    } else {
+      resPromise = this.loadPackage(url, packageName)
+      this.log(`import ${url} as ${packageName} from http no cache`)
+    }
+    try {
+      const res = await resPromise
+      return res
+    } catch (e) {
+      // only cache succeed promise
+      delete this.cachedPromise[packageName]
+      throw e
+    }
+  }
+
+  private async loadPackage(url: string, packageName: string) {
+    const { data: jsContent } = await this.fetcher.get(url)
     this.execute(packageName, jsContent)
     return this.allPackages[packageName].exports
   }
 
   private execute(packageName: string, code: string) {
-    const functionBody = `with(ctx){${code}}//# sourceURL=[module]\n`
+    const functionBody = `with(ctx){${code}}${this.options.debug ? '//# sourceURL=[module]' : ''}\n`
     const fn = new Function('ctx', functionBody)
     this.allPackages[packageName] = {
       exports: {},
