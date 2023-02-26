@@ -6,7 +6,7 @@ Import umd package by http js file.
 
 Just like normal esmodule.
 ```javascript
-import UmdImporter from "./src/main"
+import UmdImporter from '@boogoo/umd-importer'
 
 const umdImporter = new UmdImporter({debug: true})
 
@@ -15,5 +15,5 @@ const [React, ReactDOM] = await Promise.all([
   umdImporter.import<any>('https://unpkg.com/react-dom@18/umd/react-dom.development.js'),
 ])
 
-ReactDOM.createRoot(document.getElementById('app')).render(React.createElement('div', null, 'load
+ReactDOM.createRoot(document.getElementById('app')).render(React.createElement('div', null, 'loaded'))
 ```

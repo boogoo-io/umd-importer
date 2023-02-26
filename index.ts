@@ -1,4 +1,4 @@
-import UmdImporter from "./src/main"
+import UmdImporter from './src/main'
 
 const umdImporter = new UmdImporter({debug: true})
 
