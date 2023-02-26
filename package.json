@@ -1,0 +1,24 @@
+{
+  "name": "@boogoo/umd-importer",
+  "version": "1.0.0",
+  "description": "A importer loading online umd package javascript file.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/boogoo-io/umd-importer.git"
+  },
+  "keywords": [
+    "umd",
+    "importer",
+    "loader"
+  ],
+  "author": "hq5544 <baibai@outlook.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/boogoo-io/umd-importer/issues"
+  },
+  "homepage": "https://boogoo.io"
+}
