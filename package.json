@@ -1,7 +1,7 @@
 {
   "name": "@boogoo/umd-importer",
   "version": "1.0.0",
-  "description": "A importer loading online umd package javascript file.",
+  "description": "An importer loading online umd package javascript file.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
