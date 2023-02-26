@@ -1,10 +1,21 @@
 # umd-importer
 An importer loading javascript umd package from http link.
 
-## How to use
-Import umd package by http js file.
+[![https://nodei.co/npm/@boogoo/umd-importer.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/@boogoo/umd-importer.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/@boogoo/umd-importer)
 
-Just like normal esmodule.
+## How to use
+Import umd package js file from http link.
+
+Just like normal es module.
+
+First install package to your project:
+```shell
+npm i @boogoo/umd-importer
+# or
+yarn add @boogoo/umd-importer
+```
+
+Then use it in your code:
 ```javascript
 import UmdImporter from '@boogoo/umd-importer'
 
