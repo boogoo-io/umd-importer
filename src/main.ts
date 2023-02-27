@@ -57,7 +57,7 @@ class UmdImporter {
   }
 
   private execute(packageName: string, code: string) {
-    const functionBody = `with(ctx){${code}}${this.options.debug ? '//# sourceURL=[module]' : ''}\n`
+    const functionBody = `with(ctx){eval(${JSON.stringify(code)})}${this.options.debug ? '//# sourceURL=[module]' : ''}\n`
     const fn = new Function('ctx', functionBody)
     this.allPackages[packageName] = {
       exports: {},
