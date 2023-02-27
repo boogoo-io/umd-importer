@@ -3,6 +3,8 @@ An importer loading javascript umd package from http link.
 
 [![https://nodei.co/npm/@boogoo/umd-importer.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/@boogoo/umd-importer.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/@boogoo/umd-importer)
 
+Online demo: [codesandbox](https://codesandbox.io/p/sandbox/boogoo-umd-importer-uv9lei?file=%2Fsrc%2Fmain.tsx&selection=%5B%7B%22endColumn%22%3A46%2C%22endLineNumber%22%3A1%2C%22startColumn%22%3A26%2C%22startLineNumber%22%3A1%7D%5D)
+
 ## How to use
 Import umd package js file from http link.
 
