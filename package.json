@@ -1,6 +1,6 @@
 {
   "name": "@boogoo/umd-importer",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "An importer loading javascript umd package from http link.",
   "files": [
     "dist"
