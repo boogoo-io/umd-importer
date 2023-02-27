@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios'
 interface Options {
   debug?: boolean
   cache?: boolean
+  external?: any
 }
 
 class UmdImporter {
@@ -10,10 +11,12 @@ class UmdImporter {
   private readonly allPackages: any = {}
   private readonly options: Options = {}
   private readonly cachedPromise: Record<string, Promise<any> | undefined> = {}
+  private external: any = {}
 
   constructor(options: Options = {}) {
     this.fetcher = axios.create()
     this.options = options
+    this.external = options?.external || {}
   }
 
   private log(...params: any[]) {
@@ -24,6 +27,7 @@ class UmdImporter {
 
   public async import<T = unknown>(url: string, globalPackageName?: string): Promise<T> {
     const packageName = globalPackageName || this.getName(url, globalPackageName)
+    if (packageName === 'index') console.warn('Your link is not end with package name. Importer will not auto generate unique packageName. You MUST specify a packageName as the second argument.')
     let resPromise
     if (this.options.cache) {
       if (this.cachedPromise[packageName]) {
@@ -51,11 +55,12 @@ class UmdImporter {
   private async loadPackage(url: string, packageName: string) {
     const { data: jsContent } = await this.fetcher.get(url)
     this.execute(packageName, jsContent)
-    return this.allPackages[packageName].exports
+    return this.allPackages[packageName]?.module?.exports ||
+      this.allPackages[packageName]?.exports
   }
 
   private execute(packageName: string, code: string) {
-    const functionBody = `with(ctx){${code}}${this.options.debug ? '//# sourceURL=[module]' : ''}\n`
+    const functionBody = `with(ctx){eval(${JSON.stringify(code)})}${this.options.debug ? '//# sourceURL=[module]' : ''}\n`
     const fn = new Function('ctx', functionBody)
     this.allPackages[packageName] = {
       exports: {},
@@ -68,7 +73,12 @@ class UmdImporter {
 
   private umdRequireFactory = (packageName: string) => (depName: string) => {
     this.log(`${packageName} require(${depName})`)
-    return this.allPackages[depName]?.exports
+    const pkg = this.external[depName] ||
+      this.external[depName] ||
+      this.allPackages[depName]?.module?.exports ||
+      this.allPackages[depName]?.exports
+    if (!pkg) throw `${depName} not found`
+    return pkg
   }
 
   private getName(url: string, packageName?: string) {
