@@ -31,11 +31,15 @@ const umdImporter = new UmdImporter({
 })
 
 const [_, React, ReactDOM] = await Promise.all([
-  // Fetch link firt time, it will be cached.
+  // Fetch link first time, it will be cached.
   umdImporter.import<any>('https://unpkg.com/react@18.2.0/umd/react.development.js'),
   // Will not fetch again. It will be returned from cache.
   umdImporter.import<any>('https://unpkg.com/react@18.2.0/umd/react.development.js'),
-  umdImporter.import<any>('https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js'),
+  // You should specify packageName. Otherwise, importer will auto generate a packageName by url.
+  // import(url, packageName)
+  // If the link is https://a.b.c/pkg.js, auto generated name will be pkg.
+  // If the link is https://a.b.c/pkg/index.js, you MUST specify a packageName. Otherwise, other link end with index.js will not be loaded.
+  umdImporter.import<any>('https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js', 'react-dom'),
 ])
 
 ReactDOM
