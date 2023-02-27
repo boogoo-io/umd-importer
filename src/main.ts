@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios'
 interface Options {
   debug?: boolean
   cache?: boolean
+  external?: any
 }
 
 class UmdImporter {
@@ -10,10 +11,12 @@ class UmdImporter {
   private readonly allPackages: any = {}
   private readonly options: Options = {}
   private readonly cachedPromise: Record<string, Promise<any> | undefined> = {}
+  private external: any = {}
 
   constructor(options: Options = {}) {
     this.fetcher = axios.create()
     this.options = options
+    this.external = options?.external || {}
   }
 
   private log(...params: any[]) {
@@ -70,7 +73,9 @@ class UmdImporter {
 
   private umdRequireFactory = (packageName: string) => (depName: string) => {
     this.log(`${packageName} require(${depName})`)
-    const pkg = this.allPackages[depName]?.module?.exports ||
+    const pkg = this.external[depName] ||
+      this.external[depName] ||
+      this.allPackages[depName]?.module?.exports ||
       this.allPackages[depName]?.exports
     if (!pkg) throw `${depName} not found`
     return pkg
