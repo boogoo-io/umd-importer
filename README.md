@@ -18,24 +18,24 @@ yarn add @boogoo/umd-importer
 ```
 
 Then use it in your code:
-```javascript
+```typescript
 import UmdImporter from '@boogoo/umd-importer'
 
 const umdImporter = new UmdImporter({
-    // If debug mode is open, UmdImporter will log more info about url and cache.
-    // Under debug mode, package js file will be followed by //# sourceURL=[module], so you can debug package by devtools.
-    debug: true,
+  // If debug mode is open, UmdImporter will log more info about url and cache.
+  // Under debug mode, package js file will be followed by //# sourceURL=[module], so you can debug package by devtools.
+  debug: true,
 
-    // If cache is true, UmdImporter will cache succeed resource by package name.
-    cache: true,
+  // If cache is true, UmdImporter will cache succeed resource by package name.
+  cache: true,
 
-    // If external is set, importer will search external dependences first.
-    // This option helps you inject external packages into your module where called require('some-pkg').
-    external: {
-      // Dayjs is an antd dependence.
-      dayjs: (window as any).dayjs,
+  // If external is set, importer will search external dependences first.
+  // This option helps you inject external packages into your module where called require('some-pkg').
+  external: {
+    // Dayjs is an antd dependence.
+    dayjs: (window as any).dayjs,
   },
-  })
+})
 
 const [_, React, ReactDOM, Antd] = await Promise.all([
   // Fetch link first time, it will be cached.
