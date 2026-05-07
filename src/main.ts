@@ -30,7 +30,7 @@ class UmdImporter {
   }
 
   public async import<T = unknown>(url: string, globalPackageName?: string): Promise<T> {
-    if (!/^https?:\/\/.+/.test(url)) throw new Error(`Invalid URL: ${url}`)
+    this.validateUrl(url)
     const packageName = globalPackageName || this.getName(url, globalPackageName)
     if (packageName === 'index') console.warn('Your link is not end with package name. Importer will not auto generate unique packageName. You MUST specify a packageName as the second argument.')
     let resPromise
@@ -49,7 +49,7 @@ class UmdImporter {
     }
     try {
       const res = await resPromise
-      return res != null && typeof res === 'object' ? { ...res } : res
+      return this.deepFreeze(res)
     } catch (e) {
       // only cache succeed promise
       delete this.cachedPromise[url]
@@ -141,6 +141,37 @@ class UmdImporter {
       throw new Error(`Dependency "${depName}" required by "${packageName}" not found.${urlHint}`)
     }
     return pkg
+  }
+
+  private validateUrl(url: string) {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      throw new Error(`Invalid URL: ${url}`)
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error(`Invalid URL protocol "${parsed.protocol}" in ${url} (only http/https allowed)`)
+    }
+    if (!parsed.hostname) {
+      throw new Error(`Invalid URL: ${url} (missing hostname)`)
+    }
+  }
+
+  private deepFreeze<T>(obj: T, seen: WeakSet<object> = new WeakSet()): T {
+    if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function')) return obj
+    if (seen.has(obj as object) || Object.isFrozen(obj)) return obj
+    seen.add(obj as object)
+    for (const key of Object.getOwnPropertyNames(obj)) {
+      try {
+        const value = (obj as any)[key]
+        if (value !== null && (typeof value === 'object' || typeof value === 'function')) {
+          this.deepFreeze(value, seen)
+        }
+      } catch { /* skip properties whose getters throw */ }
+    }
+    Object.freeze(obj)
+    return obj
   }
 
   private getName(url: string, packageName?: string) {
