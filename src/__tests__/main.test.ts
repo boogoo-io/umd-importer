@@ -100,7 +100,8 @@ describe('UmdImporter', () => {
   });
 
   describe('sandbox', () => {
-    it('should shadow window and document as undefined', async () => {
+    it('should shadow window and document as undefined when sandbox is enabled', async () => {
+      const sandboxImporter = new UmdImporter({ debug: true, cache: true, sandbox: true });
       const mockModule = `
         (function (global, factory) {
           if (typeof exports === 'object') {
@@ -117,52 +118,12 @@ describe('UmdImporter', () => {
       `;
 
       mockGet.mockResolvedValue({ data: mockModule });
-      const result = await importer.import<any>('https://example.com/sandbox.js');
+      const result = await sandboxImporter.import<any>('https://example.com/sandbox.js');
 
       expect(result.hasWindow).toBe(false);
       expect(result.hasDocument).toBe(false);
       expect(result.hasFetch).toBe(false);
       expect(result.hasLocalStorage).toBe(false);
-    });
-  });
-
-  describe('ESM detection', () => {
-    it('should throw when code contains export statement', async () => {
-      const mockModule = `
-        export const foo = 'bar';
-      `;
-
-      mockGet.mockResolvedValue({ data: mockModule });
-      await expect(
-        importer.import('https://example.com/esm.js')
-      ).rejects.toThrow(/ESM module detected/);
-    });
-
-    it('should throw when code contains import statement', async () => {
-      const mockModule = `
-        import { something } from './other';
-      `;
-
-      mockGet.mockResolvedValue({ data: mockModule });
-      await expect(
-        importer.import('https://example.com/esm.js')
-      ).rejects.toThrow(/ESM module detected/);
-    });
-
-    it('should not throw for valid UMD code', async () => {
-      const mockModule = `
-        (function (global, factory) {
-          if (typeof exports === 'object') {
-            factory(exports);
-          }
-        })(this, function (exports) {
-          exports.imported = 'no problem';
-        });
-      `;
-
-      mockGet.mockResolvedValue({ data: mockModule });
-      const result = await importer.import<any>('https://example.com/valid.js');
-      expect(result.imported).toBe('no problem');
     });
   });
 

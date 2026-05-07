@@ -5,6 +5,7 @@ interface Options {
   cache?: boolean
   external?: any
   dependencyMap?: Record<string, string>
+  sandbox?: boolean
 }
 
 class UmdImporter {
@@ -49,7 +50,7 @@ class UmdImporter {
     }
     try {
       const res = await resPromise
-      return this.deepFreeze(res)
+      return res != null && typeof res === 'object' ? { ...res } : res
     } catch (e) {
       // only cache succeed promise
       delete this.cachedPromise[url]
@@ -89,40 +90,38 @@ class UmdImporter {
   }
 
   private execute(packageName: string, code: string) {
-    this.detectESM(packageName, code)
     const functionBody = `with(ctx){eval(${JSON.stringify(code)})}${this.options.debug ? `//# sourceURL=${packageName}` : ''}\n`
     const fn = new Function('ctx', functionBody)
     const exp = {}
-    this.allPackages[packageName] = {
+    const ctx: any = {
       exports: exp,
       module: { exports: exp },
       require: this.umdRequireFactory(packageName),
-      // Sandbox: shadow dangerous browser globals to prevent UMD code from accessing them
-      window: undefined,
-      document: undefined,
-      navigator: undefined,
-      location: undefined,
-      fetch: undefined,
-      XMLHttpRequest: undefined,
-      localStorage: undefined,
-      sessionStorage: undefined,
-      setTimeout: undefined,
-      setInterval: undefined,
-      self: undefined
     }
+    if (this.options.sandbox) {
+      // Opt-in sandbox: shadow browser globals so untrusted UMD code cannot access them.
+      // Off by default because legitimate browser UMD packages (React, ReactDOM, antd)
+      // need real window/document/setTimeout to function.
+      Object.assign(ctx, {
+        window: undefined,
+        document: undefined,
+        navigator: undefined,
+        location: undefined,
+        fetch: undefined,
+        XMLHttpRequest: undefined,
+        localStorage: undefined,
+        sessionStorage: undefined,
+        setTimeout: undefined,
+        setInterval: undefined,
+        self: undefined,
+      })
+    }
+    this.allPackages[packageName] = ctx
     this.loadingStack.push(packageName)
-    const ctx = this.allPackages[packageName]
     try {
       return fn.call(ctx, ctx)
     } finally {
       this.loadingStack.pop()
-    }
-  }
-
-  private detectESM(packageName: string, code: string) {
-    if (/\bexport\s+(default\s+|const\s+|let\s+|var\s+|function\s+|class\s+|\{)/.test(code) ||
-        /\bimport\s+(\{|[\s\S]*?\bfrom\b)/.test(code)) {
-      throw new Error(`ESM module detected in "${packageName}": export/import statements are not supported by eval()-based UMD importer`)
     }
   }
 
@@ -156,22 +155,6 @@ class UmdImporter {
     if (!parsed.hostname) {
       throw new Error(`Invalid URL: ${url} (missing hostname)`)
     }
-  }
-
-  private deepFreeze<T>(obj: T, seen: WeakSet<object> = new WeakSet()): T {
-    if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function')) return obj
-    if (seen.has(obj as object) || Object.isFrozen(obj)) return obj
-    seen.add(obj as object)
-    for (const key of Object.getOwnPropertyNames(obj)) {
-      try {
-        const value = (obj as any)[key]
-        if (value !== null && (typeof value === 'object' || typeof value === 'function')) {
-          this.deepFreeze(value, seen)
-        }
-      } catch { /* skip properties whose getters throw */ }
-    }
-    Object.freeze(obj)
-    return obj
   }
 
   private getName(url: string, packageName?: string) {
