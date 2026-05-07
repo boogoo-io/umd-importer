@@ -107,3 +107,4 @@ dist
 .yarn
 .DS_Store
 .claude/
+.playwright-mcp/

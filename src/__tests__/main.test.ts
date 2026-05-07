@@ -98,4 +98,135 @@ describe('UmdImporter', () => {
       expect(mockGet).toHaveBeenCalledWith('https://example.com/test.js');
     });
   });
+
+  describe('sandbox', () => {
+    it('should shadow window and document as undefined', async () => {
+      const mockModule = `
+        (function (global, factory) {
+          if (typeof exports === 'object') {
+            factory(exports);
+          } else {
+            factory((global.testModule = {}));
+          }
+        })(this, function (exports) {
+          exports.hasWindow = typeof window !== 'undefined';
+          exports.hasDocument = typeof document !== 'undefined';
+          exports.hasFetch = typeof fetch !== 'undefined';
+          exports.hasLocalStorage = typeof localStorage !== 'undefined';
+        });
+      `;
+
+      mockGet.mockResolvedValue({ data: mockModule });
+      const result = await importer.import<any>('https://example.com/sandbox.js');
+
+      expect(result.hasWindow).toBe(false);
+      expect(result.hasDocument).toBe(false);
+      expect(result.hasFetch).toBe(false);
+      expect(result.hasLocalStorage).toBe(false);
+    });
+  });
+
+  describe('ESM detection', () => {
+    it('should throw when code contains export statement', async () => {
+      const mockModule = `
+        export const foo = 'bar';
+      `;
+
+      mockGet.mockResolvedValue({ data: mockModule });
+      await expect(
+        importer.import('https://example.com/esm.js')
+      ).rejects.toThrow(/ESM module detected/);
+    });
+
+    it('should throw when code contains import statement', async () => {
+      const mockModule = `
+        import { something } from './other';
+      `;
+
+      mockGet.mockResolvedValue({ data: mockModule });
+      await expect(
+        importer.import('https://example.com/esm.js')
+      ).rejects.toThrow(/ESM module detected/);
+    });
+
+    it('should not throw for valid UMD code', async () => {
+      const mockModule = `
+        (function (global, factory) {
+          if (typeof exports === 'object') {
+            factory(exports);
+          }
+        })(this, function (exports) {
+          exports.imported = 'no problem';
+        });
+      `;
+
+      mockGet.mockResolvedValue({ data: mockModule });
+      const result = await importer.import<any>('https://example.com/valid.js');
+      expect(result.imported).toBe('no problem');
+    });
+  });
+
+  describe('dependency pre-fetch', () => {
+    let depImporter: UmdImporter;
+
+    beforeEach(() => {
+      mockedAxios.create.mockReturnValue({
+        get: mockGet,
+      } as any);
+      depImporter = new UmdImporter({
+        debug: true,
+        cache: true,
+        dependencyMap: {
+          'lib-a': 'https://example.com/lib-a.js',
+        },
+      });
+    });
+
+    it('should auto-fetch dependency from dependencyMap', async () => {
+      const depModule = `
+        (function (global, factory) {
+          if (typeof exports === 'object') {
+            factory(exports);
+          }
+        })(this, function (exports) {
+          exports.libValue = 'from-lib';
+        });
+      `;
+
+      const mainModule = `
+        (function (global, factory) {
+          if (typeof exports === 'object') {
+            factory(exports, require('lib-a'));
+          }
+        })(this, function (exports, lib) {
+          exports.result = lib.libValue;
+        });
+      `;
+
+      mockGet
+        .mockResolvedValueOnce({ data: mainModule })
+        .mockResolvedValueOnce({ data: depModule });
+
+      const result = await depImporter.import<any>('https://example.com/main.js');
+      expect(result.result).toBe('from-lib');
+    });
+
+    it('should not auto-fetch without dependencyMap', async () => {
+      const mainModule = `
+        (function (global, factory) {
+          if (typeof exports === 'object') {
+            factory(exports, require('lib-a'));
+          }
+        })(this, function (exports, lib) {
+          exports.result = lib.libValue;
+        });
+      `;
+
+      mockGet.mockResolvedValue({ data: mainModule });
+
+      await expect(
+        importer.import('https://example.com/main.js')
+      ).rejects.toThrow(/Dependency "lib-a"/);
+    });
+  });
 }); 
