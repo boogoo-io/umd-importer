@@ -13,6 +13,7 @@ class UmdImporter {
   private readonly allPackages: any = {}
   private readonly options: Options = {}
   private readonly cachedPromise: Record<string, Promise<any> | undefined> = {}
+  private readonly packageUrlMap: Record<string, string> = {}
   private external: any = {}
   private dependencyMap: Record<string, string> = {}
   private loadingStack: string[] = []
@@ -33,6 +34,7 @@ class UmdImporter {
   public async import<T = unknown>(url: string, globalPackageName?: string): Promise<T> {
     this.validateUrl(url)
     const packageName = globalPackageName || this.getName(url, globalPackageName)
+    this.packageUrlMap[packageName] = url
     if (packageName === 'index') console.warn('Your link is not end with package name. Importer will not auto generate unique packageName. You MUST specify a packageName as the second argument.')
     let resPromise
     if (this.options.cache) {
@@ -174,11 +176,17 @@ class UmdImporter {
 
   public unload(packageName: string) {
     delete this.allPackages[packageName]
+    const url = this.packageUrlMap[packageName]
+    if (url) {
+      delete this.cachedPromise[url]
+      delete this.packageUrlMap[packageName]
+    }
   }
 
   public clear() {
     Object.keys(this.allPackages).forEach(key => delete this.allPackages[key])
     Object.keys(this.cachedPromise).forEach(key => delete this.cachedPromise[key])
+    Object.keys(this.packageUrlMap).forEach(key => delete this.packageUrlMap[key])
   }
 }
 
