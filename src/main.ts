@@ -120,6 +120,13 @@ class UmdImporter {
     this.loadingStack.push(packageName)
     try {
       return fn.call(ctx, ctx)
+    } catch (e) {
+      if (e instanceof SyntaxError && /\b(import|export)\b/.test(code)) {
+        delete this.allPackages[packageName]
+        console.warn(`[umd-importer] ESM module is not supported, skipping "${packageName}": ${e.message}`)
+      } else {
+        throw e
+      }
     } finally {
       this.loadingStack.pop()
     }

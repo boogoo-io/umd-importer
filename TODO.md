@@ -31,4 +31,4 @@
 ## 其他
 
 - [x] **URL 包名提取不支持 query/hash** — `getName()` 只做简单的 `split('.')[0]`，对 `?ver=1`、`#hash` 等 URL 不健壮。
-- [ ] **ESM 模块不支持** — `eval()` 无法解析 `import`/`export`，遇到 ESM 链接会抛 `SyntaxError`。
+- [x] **ESM 模块不支持** — `eval()` 无法解析 `import`/`export`，遇到 ESM 链接会抛 `SyntaxError`。
