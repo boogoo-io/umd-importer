@@ -107,4 +107,5 @@ dist
 .yarn
 .DS_Store
 .claude/
+.omc/
 .playwright-mcp/
